@@ -3,7 +3,9 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Models\MenuItem;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Routing\Controller as BaseController;
 
 class MenuController extends BaseController
@@ -93,6 +95,25 @@ class MenuController extends BaseController
      */
 
     public function getMenuItems() {
-        throw new \Exception('implement in coding task 3');
+        try{
+            $menuItems = MenuItem::whereNull('parent_id')->get();
+            return $this->buildMenuTree($menuItems);
+        }catch(Exception $e){
+            Log::error($e->getMessage());
+        }
+    }
+    private function buildMenuTree($menuItems) {
+        $menuTree = [];
+        foreach ($menuItems as $menuItem) {
+            $menuItemData = $menuItem->toArray();
+            $children = MenuItem::where('parent_id', $menuItem->id)->get();
+            if ($children->isNotEmpty()) {
+                $menuItemData['children'] = $this->buildMenuTree($children);
+            } else {
+                $menuItemData['children'] = [];
+            }
+            $menuTree[] = $menuItemData;
+        }
+        return $menuTree;
     }
 }
